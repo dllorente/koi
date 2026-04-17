@@ -13,7 +13,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Stronger token strategy beyond mock tokens.[cite:35]
 - Masked IBAN exposure and richer balance modeling.[cite:12]
 - Chat orchestration with internal banking tools.[cite:12]
-
+### Added
+- `/tests/recent` test_smoke.py
 ## [0.2.0] - 2026-04-17
 
 ### Added

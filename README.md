@@ -113,8 +113,30 @@ Expected response:
 - Future hardening will include HTTPBearer, password hashing, and stronger token handling.[cite:35]
 
 ## Roadmap
-- Sprint 1: base project scaffolding.[cite:12]
-- Sprint 2: authenticated read-only banking baseline.[cite:12]
-- Sprint 3: chat orchestration with banking tools.[cite:12]
-- Sprint 4: persistence, testing, and API hardening.[cite:35][cite:34]
-- Sprint 5: richer product capabilities and security improvements.[cite:35]
+
+- Sprint 1 (v0.1.0): base project scaffolding
+  - Poetry, FastAPI, health check, estructura inicial.
+
+- Sprint 2 (v0.2.0): authenticated read-only banking baseline
+  - Mock auth + demo users, /auth/me.
+  - Cuentas, resumen de saldo, transacciones recientes.
+  - Actividad Bizum mock (recent + received).
+
+- Sprint 3 (v0.3.0): chat endpoint with rule-based banking routing
+  - Endpoint /chat protegido por auth.
+  - Schemas ChatRequest/ChatResponse con ChatIntent enum.
+  - Router determinista: saldo, cuentas, movimientos, Bizum.
+  - Tests unitarios de detect_intent() y handle_chat().
+
+- Sprint 4 (v0.4.0): API hardening, persistence & quality
+  - Mejoras de seguridad básica (HTTPBearer, hashing passwords, tokens más serios).
+  - Persistencia real (por ejemplo SQLite/PostgreSQL en lugar de solo datasets en memoria).
+  - Manejo de errores, respuestas más robustas, paginación donde aplique.
+  - Cobertura de tests ampliada (auth, endpoints clave).
+  - README/CHANGELOG actualizados con el estado de producto.
+
+- Sprint 5 (v0.5.0): agent-based intent routing with LLM + banking tools
+  - Módulo intent_agent con classify_intent_with_llm(message) -> ChatIntent.
+  - Router híbrido (reglas + LLM) de transición.
+  - Sustitución progresiva de detect_intent() por routing gestionado por agente/LLM.
+  - Validación con los mismos tests funcionales del router actual.

@@ -6,17 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
+## [0.3.0] - 2026-04-18
+### Added
+- Protected `/chat` endpoint for authenticated banking conversations.
+- `ChatIntent` enum and chat schemas (`ChatRequest`, `ChatResponse`).
+- Rule-based banking router for balance, accounts, recent transactions, and Bizum activity.
+- Unit tests for `detect_intent()` and `handle_chat()`.
+- `/tests/recent` test_smoke.py
+- docker fixes to ci pipeline in github actions
+### Notes
+- Current intent routing is deterministic and explicitly marked as temporary.
+- Future versions will replace it with agent-based LLM intent routing.
 ### Planned
 - HTTPBearer integration for Swagger-friendly authentication flow.[cite:35]
 - Password hashing with bcrypt or equivalent.[cite:35]
 - Stronger token strategy beyond mock tokens.[cite:35]
 - Masked IBAN exposure and richer balance modeling.[cite:12]
 - Chat orchestration with internal banking tools.[cite:12]
-### Added
-- `/tests/recent` test_smoke.py
-## [0.2.0] - 2026-04-17
 
+## [0.2.0] - 2026-04-17
 ### Added
 - Mock authentication flow with demo users.[cite:12]
 - Bearer-token-based current user resolution for protected endpoints.[cite:34]
@@ -40,7 +48,6 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Protected endpoints are currently best validated with `curl` because Swagger UI may not reliably send the manual `Authorization` header in the current MVP auth approach.[cite:34]
 
 ## [0.1.0] - 2026-04-17
-
 ### Added
 - Initial project scaffold created with Poetry.[cite:12]
 - Base Python package structure for the Koi backend.[cite:12]

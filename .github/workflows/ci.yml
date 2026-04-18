@@ -62,8 +62,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            tuusuario/koi:${{ github.ref_name }}
-            tuusuario/koi:latest
+            dllorente/koi:${{ github.ref_name }}
+            dllorente/koi:latest
     
 
   release:  # Opcional: PyPI en tags

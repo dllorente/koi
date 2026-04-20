@@ -1,9 +1,10 @@
 from pydantic import BaseModel
+from datetime import date
 
 #Representa un evento de Bizum listo para salir por API.
 class BizumEventPublic(BaseModel):
     bizum_id: str
-    booking_date: str
+    booking_date: date
     amount: float
     currency: str
     direction: str

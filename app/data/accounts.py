@@ -1,3 +1,6 @@
+from sqlmodel import Session, select
+from app.db.models import Account
+
 from app.schemas.accounts import (
     AccountBalanceItem,
     AccountPublic,
@@ -408,54 +411,64 @@ DEMO_ACCOUNTS =[
   }
 ]
 
-def get_accounts_by_user_id(user_id: str) -> list[dict]:
-    return [account for account in DEMO_ACCOUNTS if account["user_id"] == user_id]
+def get_accounts_by_user_id(session: Session, user_id: int) -> list[Account]:
+    statement = select(Account).where(Account.user_id == user_id)
+    return session.exec(statement).all()
 
-def get_public_accounts_by_user_id(user_id: str) -> list[AccountPublic]:
-    accounts = get_accounts_by_user_id(user_id)
+def get_public_accounts_by_user_id(
+    session: Session,
+    user_id: int,
+) -> list[AccountPublic]:
+    accounts = get_accounts_by_user_id(session, user_id)
     return [
         AccountPublic(
-            account_id=account["account_id"],
-            iban=account["iban"],
-            alias=account["alias"],
-            balance=account["balance"],
-            currency=account["currency"],
+            account_id=account.account_id,
+            iban=account.iban,
+            alias=account.alias,
+            balance=account.balance,
+            currency=account.currency,
         )
         for account in accounts
     ]
 
 #Calcula la suma de balances de todas las cuentas del usuario.
-def get_total_balance_by_user_id(user_id: str) -> float:
-    accounts = get_accounts_by_user_id(user_id)
-    return round(sum(account["balance"] for account in accounts), 2)
+def get_total_balance_by_user_id(session: Session, user_id: int) -> float:
+    accounts = get_accounts_by_user_id(session, user_id)
+    return round(sum(account.balance for account in accounts), 2)
 
 #Construye un resumen agregado simple usando BalanceSummary
-def get_balance_summary_by_user_id(user_id: str) -> BalanceSummary:
-    accounts = get_accounts_by_user_id(user_id)
-    currency = accounts[0]["currency"] if accounts else "EUR"
+def get_balance_summary_by_user_id(
+    session: Session,
+    user_id: int,
+) -> BalanceSummary:
+    accounts = get_accounts_by_user_id(session, user_id)
+    currency = accounts[0].currency if accounts else "EUR"
 
     return BalanceSummary(
         user_id=user_id,
         currency=currency,
-        total_balance=round(sum(account["balance"] for account in accounts), 2),
+        total_balance=round(sum(account.balance for account in accounts), 2),
         account_count=len(accounts),
     )
 
-def get_detailed_balance_summary_by_user_id(user_id: str) -> BalanceSummaryDetailed:
-    accounts = get_accounts_by_user_id(user_id)
-    currency = accounts[0]["currency"] if accounts else "EUR"
+def get_detailed_balance_summary_by_user_id(
+    session: Session,
+    user_id: int,
+) -> BalanceSummaryDetailed:
+    accounts = get_accounts_by_user_id(session, user_id)
+    currency = accounts[0].currency if accounts else "EUR"
 
     return BalanceSummaryDetailed(
         user_id=user_id,
         currency=currency,
-        total_balance=round(sum(account["balance"] for account in accounts), 2),
+        total_balance=round(sum(account.balance for account in accounts), 2),
         account_count=len(accounts),
         accounts=[
             AccountBalanceItem(
-                account_id=account["account_id"],
-                alias=account["alias"],
-                balance=account["balance"],
-                currency=account["currency"],
+                account_id=account.account_id,
+                alias=account.alias,
+                balance=account.balance,
+                currency=account.currency,
             )
             for account in accounts
         ],

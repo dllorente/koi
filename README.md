@@ -4,6 +4,8 @@ Koi is an AI banking copilot project built from scratch as a sprint-based MVP.
 
 The name stands for **Know your Own fInances** and represents the idea of a secure, read-only banking assistant focused on authenticated personal finance queries.[cite:12]
 
+---
+
 ## Current status
 
 ### Sprint 1 completed
@@ -27,14 +29,35 @@ The name stands for **Know your Own fInances** and represents the idea of a secu
 - `/bizum/recent` and `/bizum/received` endpoints.[cite:12]
 - Refactor from `models/` to `schemas/` for Pydantic API contracts.[cite:60]
 
+### Sprint 3 completed
+- `/chat` endpoint protected by JWT Bearer auth.[cite:300]
+- `ChatIntent` enum and deterministic routing based on normalized Spanish banking queries (saldo, cuentas, movimientos, Bizum).[cite:300]
+- `handle_chat` service returning structured responses with `answer`, `intent`, `data`, `suggestions` (chips) and `ui_hints` for frontend integration.[cite:300]
+- Unit tests covering all main intents (saldo, cuentas, movimientos, Bizum reciente, Bizum recibidos, fallback).[cite:742]
+
+### Sprint 4 completed
+- Migration from fully mocked datasets to **real SQLite persistence** using **SQLModel** for users, accounts, transactions, Bizum events and chat messages.[web:866][web:863]
+- Application startup lifecycle creating tables and seeding demo banking data automatically for local development.[web:866]
+- `/chat` endpoint now persisting both user and assistant messages into `chatmessage` with `user_id`, `session_id`, `role`, `content` and `created_at`.[web:866]
+- Verified end-to-end flow: `auth/login` → `auth/me` → `/chat` → messages stored in SQLite and queryable by `session_id`.[web:866]
+- README / roadmap aligned to reflect the new persistence and chat history foundations.[file:710]
+
+---
+
 ## Tech stack
+
 - Python.[cite:4]
 - Poetry.[cite:12]
 - FastAPI.[cite:4]
 - Pydantic.[cite:12]
+- **SQLModel + SQLite for database models and persistence.**[web:866]
 - Uvicorn.[cite:12]
+- PyJWT / python-jose-style JWT handling for access tokens.[web:730]
+
+---
 
 ## Project structure
+
 ```bash
 koi/
 ├── app/
@@ -48,7 +71,8 @@ koi/
 │   │       ├── auth.py
 │   │       ├── accounts.py
 │   │       ├── transactions.py
-│   │       └── bizum.py
+│   │       ├── bizum.py
+│   │       └── chat.py
 │   ├── core/
 │   │   ├── __init__.py
 │   │   └── security.py
@@ -57,13 +81,17 @@ koi/
 │   │   ├── accounts.py
 │   │   ├── transactions.py
 │   │   └── bizum.py
+│   ├── db/
+│   │   ├── __init__.py
+│   │   └── models.py    # SQLModel definitions (User, Account, Transaction, BizumEvent, ChatMessage)
 │   └── schemas/
 │       ├── __init__.py
 │       ├── user.py
 │       ├── auth.py
 │       ├── account.py
 │       ├── transaction.py
-│       └── bizum.py
+│       ├── bizum.py
+│       └── chat.py
 ├── tests/
 ├── .env
 ├── .gitignore
@@ -72,71 +100,146 @@ koi/
 └── CHANGELOG.md
 ```
 
+[cite:12][cite:300][web:866]
+
+---
+
 ## Run locally
+
 ```bash
 poetry install
 poetry run uvicorn app.main:app --reload
 ```
 
+On startup, the app will:
+
+- create SQLite tables with SQLModel,
+- seed demo users, accounts, transactions and Bizum events,
+- prepare the `chatmessage` table to persist chat history.[web:866]
+
+[cite:12][web:866]
+
+---
+
 ## Available endpoints
 
 ### Public
+
 ```bash
-GET /health
-POST /auth/login
+GET  /health        # Health check
+POST /auth/login    # Obtain JWT access token for demo user
 ```
 
-### Protected
+[cite:12][cite:300]
+
+### Protected (JWT Bearer)
+
+All these endpoints expect an `Authorization: Bearer <access_token>` header containing a signed JWT created with `create_access_token(subject)`, where `subject` is typically the user identifier.[web:730][cite:698]
+
 ```bash
-GET /auth/me
-GET /accounts
-GET /accounts/summary
-GET /transactions/recent
-GET /transactions/accounts/{account_id}
-GET /bizum/recent
-GET /bizum/received
+GET  /auth/me
+GET  /accounts
+GET  /accounts/summary
+GET  /transactions/recent
+GET  /transactions/accounts/{account_id}
+GET  /bizum/recent
+GET  /bizum/received
+POST /chat
 ```
+
+- `POST /chat`: rule-based banking chat endpoint that detects `ChatIntent` and returns structured responses (`answer`, `intent`, `data`, `suggestions`, `ui_hints`) for queries like balance, accounts, recent movements, Bizum activity, and fallback.[cite:300][cite:742]
+- The chat endpoint **persists each turn** into `chatmessage` with `user_id` (from JWT), `session_id` (from request), `role` (`user` / `assistant`) and `content`, enabling conversation history queries per session.[web:866]
+
+---
+
+## Chat persistence model
+
+The authentication token identifies **who** is calling the API, while `session_id` identifies **which conversation thread** the message belongs to.
+
+Current design:
+
+- `user_id`: resolved from the JWT and stored with each message.[web:782]
+- `session_id`: provided by the client; groups messages belonging to the same conversation.[web:878]
+- `role`: `"user"` or `"assistant"`.
+- `content`: stored chat message text.
+- `created_at`: timestamp for message ordering.
+
+This allows the same authenticated user to hold **multiple independent chat sessions** by using different `session_id` values.
+
+> In the current MVP, the client is responsible for generating and sending `session_id` (e.g. a UUID) when starting a new chat. A future sprint will introduce a formal `ChatSession` model and dedicated endpoints to create and list chat sessions.[web:878][cite:881]
+
+---
 
 ## Health check
+
 ```bash
 GET /health
 ```
 
 Expected response:
+
 ```json
 {"status": "ok"}
 ```
 
+[cite:12]
+
+---
+
 ## Notes
-- Authentication is currently mock-based and intended for MVP development only.[cite:35][cite:12]
-- Protected endpoints are validated correctly by the backend; Swagger UI may not send the manual `Authorization` header reliably with the current implementation, so `curl` is the preferred validation method at this stage.[cite:34]
-- Future hardening will include HTTPBearer, password hashing, and stronger token handling.[cite:35]
+
+- Authentication uses **JWT access tokens** signed with a secret key and expiration; banking datasets (users, accounts, transactions, Bizum) are now backed by **SQLite + SQLModel** instead of pure in-memory mocks.[web:866][cite:698]
+- Protected endpoints are validated by the backend via a dependency that decodes the JWT and resolves the current user; Swagger UI can be used for manual exploration, but `curl` or API clients (HTTPie, Postman) are recommended to control the `Authorization` header explicitly.[cite:34]
+- Future hardening will include stronger password hashing for demo users, refined token lifetime/refresh strategies, and **formal chat session management** (backend-driven or frontend-coordinated session creation) on top of the current `session_id`-based persistence.[cite:35][web:878]
+
+---
+
+# Koi Roadmap
+
+Koi evoluciona desde una **API bancaria read-only autenticada** hacia un **copilot fintech agentic** con memoria, guardrails, observabilidad, evaluación y frontend de producto.[cite:300]
 
 ## Roadmap
 
-- Sprint 1 (v0.1.0): base project scaffolding
-  - Poetry, FastAPI, health check, estructura inicial.
+| Sprint | Versión | Objetivo | Entregables clave | Valor arquitectónico |
+|---|---|---|---|---|
+| 1 | v0.1.0 | Base project scaffolding | Poetry, FastAPI, health check, estructura modular inicial, config por entorno | Base mantenible y preparada para crecer |
+| 2 | v0.2.0 | Authenticated read-only banking baseline | Mock auth, demo users, `/auth/me`, cuentas, saldo, transacciones, Bizum mock | Primer contrato funcional de API bancaria read-only |
+| 3 | v0.3.0 | Chat endpoint with rule-based banking routing | `/chat` protegido, `ChatIntent`, router determinista, tests unitarios | Separa intención, handlers y capa de respuesta |
+| 4 | v0.4.0 | API hardening, persistence & quality | HTTPBearer/JWT, **SQLite persistence with SQLModel for banking data and chat messages**, errores robustos, tests ampliados, README/CHANGELOG | Base backend seria para evolucionar a producto [1][web:866] |
+| 5 | v0.5.0 | Agent-based intent routing with LLM + banking tools | `intent_agent`, router híbrido reglas+LLM, tools bancarias read-only, validación funcional | Paso de API clásica a arquitectura agentic |
+| 6 | v0.6.0 | Professional product UI / frontend MVP | UI profesional para login, cuentas, saldo, movimientos, Bizum y chat conectado a API | Permite demo real de producto sin depender de Swagger [2] |
+| 7 | v0.7.0 | Conversational UX & persistent chat history | Historial persistente, recuperación por sesión/usuario, mejoras de UX de chat | Introduce continuidad conversacional real [3] |
+| 8 | v0.8.0 | Observability & evaluation foundations | Trazas end-to-end, dataset inicial de evaluación, métricas de calidad, logging estructurado | Observability + evals son base de agentes en producción [4][5] |
+| 9 | v0.9.0 | Guardrails & safe fintech interaction | Validación de inputs, control de outputs, anti prompt-injection, modo read-only reforzado, políticas seguras | Safety y guardrails separan prototipo de sistema fiable [6][7] |
+| 10 | v1.0.0 | Deployment-ready MVP | Docker, CI/CD, deploy backend/frontend, configuración por entorno, release checklist | Koi pasa de proyecto local a MVP desplegable [8][9] |
+| 11 | v1.1.0 | Memory architecture & user context | Memoria corto/largo plazo, preferencias de usuario, políticas de retención y borrado | Separa memoria, perfil y contexto operativo del agente [10] |
+| 12 | v1.2.0 | Retrieval & banking knowledge layer | RAG para FAQs, políticas y glosario, retrieval refinement, grounding y evaluación de retrieval | Añade conocimiento bancario verificable al agente [11][12] |
+| 13 | v1.3.0 | Orchestration architecture with LangGraph | Grafo explícito, planner/router, synthesis, retries, fallbacks, branching | Arquitectura agentic observable y controlada [13] |
+| 14 | v1.4.0 | Frontend product experience | UI de producto conectada a API y agente, historial persistente visible, demo end-to-end | Convierte Koi en una experiencia de producto enseñable [3] |
+| 15 | v1.5.0 | Human-in-the-loop & approval workflows | HITL para casos ambiguos o sensibles, aprobación manual, auditoría de decisiones | Muy relevante en finanzas por control y accountability [14][15][16] |
+| 16 | v1.6.0 | Governance, auditability & compliance posture | Audit trail, redacción de datos sensibles, versionado de prompts/policies, catálogo de riesgos | Gobernanza y trazabilidad de nivel enterprise [17][12] |
+| 17 | v1.7.0 | Advanced evals & safety scorecards | Evals offline/online, benchmarks regresivos, edge cases financieros, scorecards por tool/intent | Permite medir calidad, seguridad y regresiones [4][5] |
+| 18 | v1.8.0 | Multi-model strategy & cost-performance routing | Routing entre modelos por coste, latencia y calidad, fallback entre proveedores, telemetría de coste | Arquitectura moderna optimizada para producción [10] |
+| 19 | v1.9.0 | Platformization & external integrations | API madura, integraciones externas, capacidades tipo MCP/tools contracts | Prepara Koi para ecosistemas multi-agente [13] |
+| 20 | v2.0.0 | Enterprise-grade fintech copilot showcase | Demo estable end-to-end, arquitectura documentada, casos de uso de negocio, storytelling técnico | Posiciona Koi como portfolio senior de AI Engineer / Solutions Architect |
 
-- Sprint 2 (v0.2.0): authenticated read-only banking baseline
-  - Mock auth + demo users, /auth/me.
-  - Cuentas, resumen de saldo, transacciones recientes.
-  - Actividad Bizum mock (recent + received).
+[cite:300]
 
-- Sprint 3 (v0.3.0): chat endpoint with rule-based banking routing
-  - Endpoint /chat protegido por auth.
-  - Schemas ChatRequest/ChatResponse con ChatIntent enum.
-  - Router determinista: saldo, cuentas, movimientos, Bizum.
-  - Tests unitarios de detect_intent() y handle_chat().
+---
 
-- Sprint 4 (v0.4.0): API hardening, persistence & quality
-  - Mejoras de seguridad básica (HTTPBearer, hashing passwords, tokens más serios).
-  - Persistencia real (por ejemplo SQLite/PostgreSQL en lugar de solo datasets en memoria).
-  - Manejo de errores, respuestas más robustas, paginación donde aplique.
-  - Cobertura de tests ampliada (auth, endpoints clave).
-  - README/CHANGELOG actualizados con el estado de producto.
+## Lectura por etapas
 
-- Sprint 5 (v0.5.0): agent-based intent routing with LLM + banking tools
-  - Módulo intent_agent con classify_intent_with_llm(message) -> ChatIntent.
-  - Router híbrido (reglas + LLM) de transición.
-  - Sustitución progresiva de detect_intent() por routing gestionado por agente/LLM.
-  - Validación con los mismos tests funcionales del router actual.
+- **v0.x**: construcción del producto funcional, desde API bancaria autenticada hasta routing agentic inicial y primera UI usable.[cite:300]  
+- **v1.x**: maduración como sistema agentic serio, con memoria, RAG, observabilidad, guardrails, human-in-the-loop y gobernanza.[cite:300]  
+- **v2.0**: consolidación como showcase enterprise orientado a portfolio senior, con arquitectura y demo de producto completas.[cite:300]
+
+---
+
+## Capacidades arquitectónicas cubiertas
+
+- Seguridad básica y auth seria con Bearer + JWT (ya implementado a nivel de generación y validación de tokens para usuarios demo).[cite:698]
+- Persistencia real y separación entre API, datos, memoria y experiencia de usuario (introducida progresivamente a partir de Sprint 4 con SQLite + SQLModel para datos bancarios y chat). [web:866][cite:300]
+- Routing híbrido y posterior evolución a orquestación agentic con tools.[cite:300]
+- Observabilidad, evaluación y guardrails como base de fiabilidad operativa.[cite:300]
+- Human-in-the-loop, auditabilidad y gobierno del sistema para contexto fintech.[cite:300]
+- Estrategia multi-modelo y preparación para integraciones externas y ecosistemas más amplios.[cite:300]

@@ -1,38 +1,32 @@
-from fastapi import Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
 
-from app.core.security import get_user_by_id, parse_mock_token
+#from app.data.users import get_user_by_id, parse_mock_token
+from app.core.security import decode_access_token, get_bearer_token
+from app.data.users import get_user_by_id
 from app.schemas.user import UserPublic
+from sqlmodel import Session
+from app.db.database import get_session
 
-def get_current_user(authorization: str | None = Header(default=None)) -> UserPublic:
-    if not authorization:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authorization header missing",
-            )
+def get_current_user(
+    token: str = Depends(get_bearer_token),
+    session: Session = Depends(get_session),
+) -> UserPublic:
+    payload = decode_access_token(token)
 
-    scheme, _, token = authorization.partition(" ")
-
-    if scheme.lower() != "bearer" or not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization scheme",
-        )
-
-    user_id = parse_mock_token(token)
+    user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
+            detail="Token payload missing subject",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = get_user_by_id(user_id)
-    if not user:
+    user = get_user_by_id(session, user_id)
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    return UserPublic(
-        user_id=user["user_id"],
-        full_name=user["full_name"],
-        email=user["email"],
-    )
+
+    return user

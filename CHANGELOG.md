@@ -6,6 +6,21 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.4.0] - 2026-04-20
+### Added
+- Real SQLite persistence with SQLModel for users, accounts, transactions, Bizum events and chat messages.
+- Persisted chat conversations using `session_id`, `user_id`, `role`, `content` and `created_at`.
+- Bizum endpoints backed by database queries instead of in-memory mock data.
+### Changed
+- Refactored chat flow to use real persistence-backed data sources for accounts, transactions and Bizum.
+- Startup lifecycle now creates tables and seeds demo data through FastAPI lifespan.
+### Fixed
+- Resolved missing table issues for new SQLModel entities.
+- Fixed schema alignment issues between DB date fields and Pydantic response models.
+### Next
+- Add formal `ChatSession` management and automatic `session_id` generation from frontend or backend session endpoints.
+- Add chat history retrieval endpoints for persisted conversations.
+
 ## [0.3.0] - 2026-04-18
 ### Added
 - Protected `/chat` endpoint for authenticated banking conversations.

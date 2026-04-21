@@ -1,4 +1,4 @@
-from app.core.passwords import  verify_password
+from app.core.passwords import verify_password
 from app.schemas.user import UserPublic
 from sqlmodel import Session, select
 from app.db.models import User

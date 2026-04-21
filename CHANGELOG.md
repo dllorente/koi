@@ -5,7 +5,30 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.0] - Unreleased
+### Added
+- Conversational banking UI for interactive testing of multi-turn chat flows.
+- Session-aware chat view with message history and suggestion chips.
+- Debug panel to inspect detected intent, entities, missing entities, confidence and tools used.
+- Faster manual validation workflow for balance, accounts, transactions and Bizum use cases.
+
+## [0.5.0] - 2026-04-21
+### Added
+- Closed banking taxonomy for intents, tools and entities.
+- `intent_agent` with structured output including intent, confidence, entities, missing entities and clarification signals.
+- Read-only banking tools for balance summary, account listing, recent transactions and Bizum activity.
+- Entity resolution over current user message and available banking context.
+- Real multi-turn clarification flow for ambiguous account-specific requests.
+- Persistence of chat decisions and assistant traces in database.
+- Functional support for account alias disambiguation in transaction and balance queries.
+### Changed
+- Refactored chat routing to separate taxonomy, intent detection, clarification resolution and tool execution concerns.
+- Reduced ad hoc logic in the conversational flow and moved tool naming to taxonomy mapping.
+- Improved transaction retrieval to support filtering by resolved `account_alias`.### Fixed
+- Fixed incorrect tool trace persistence for non-balance intents.
+- Fixed clarification flow so follow-up responses such as "de la cuenta ahorro" resolve correctly.
+- Fixed account-specific recent transactions so they return filtered results instead of aggregated data.
+
 ## [0.4.0] - 2026-04-20
 ### Added
 - Real SQLite persistence with SQLModel for users, accounts, transactions, Bizum events and chat messages.

@@ -42,6 +42,14 @@ The name stands for **Know your Own fInances** and represents the idea of a secu
 - Verified end-to-end flow: `auth/login` → `auth/me` → `/chat` → messages stored in SQLite and queryable by `session_id`.[web:866]
 - README / roadmap aligned to reflect the new persistence and chat history foundations.[file:710]
 
+### Sprint 5 delivered the first production-oriented conversational banking core:
+- banking taxonomy,
+- structured intent classification,
+- entity extraction and resolution,
+- real clarification flow,
+- persisted chat traces,
+- deterministic validation and fallback.
+
 ---
 
 ## Tech stack
@@ -196,32 +204,32 @@ Expected response:
 
 # Koi Roadmap
 
-Koi evoluciona desde una **API bancaria read-only autenticada** hacia un **copilot fintech agentic** con memoria, guardrails, observabilidad, evaluación y frontend de producto.[cite:300]
-
-## Roadmap
+Koi evoluciona desde una API bancaria read-only hacia un **fintech copilot** con arquitectura conversacional, frontend de producto, observabilidad, seguridad y capacidades enterprise.  
+El punto de inflexión principal está en **v0.5.0**, donde el sistema deja atrás el **routing ad hoc** como mecanismo principal y adopta una base conversacional guiada por **taxonomía, intent detection con LLM, resolución de entidades y aclaración multi-turno**.
 
 | Sprint | Versión | Objetivo | Entregables clave | Valor arquitectónico |
 |---|---|---|---|---|
-| 1 | v0.1.0 | Base project scaffolding | Poetry, FastAPI, health check, estructura modular inicial, config por entorno | Base mantenible y preparada para crecer |
-| 2 | v0.2.0 | Authenticated read-only banking baseline | Mock auth, demo users, `/auth/me`, cuentas, saldo, transacciones, Bizum mock | Primer contrato funcional de API bancaria read-only |
+| 1 | v0.1.0 | Base project scaffolding | Poetry, FastAPI, health check, estructura modular inicial, configuración por entorno | Base mantenible y preparada para crecer |
+| 2 | v0.2.0 | Authenticated read-only banking baseline | Mock auth, demo users, `/auth/me`, cuentas, saldo, transacciones y Bizum mock | Primer contrato funcional de API bancaria read-only |
 | 3 | v0.3.0 | Chat endpoint with rule-based banking routing | `/chat` protegido, `ChatIntent`, router determinista, tests unitarios | Separa intención, handlers y capa de respuesta |
-| 4 | v0.4.0 | API hardening, persistence & quality | HTTPBearer/JWT, **SQLite persistence with SQLModel for banking data and chat messages**, errores robustos, tests ampliados, README/CHANGELOG | Base backend seria para evolucionar a producto [1][web:866] |
-| 5 | v0.5.0 | Agent-based intent routing with LLM + banking tools | `intent_agent`, router híbrido reglas+LLM, tools bancarias read-only, validación funcional | Paso de API clásica a arquitectura agentic |
-| 6 | v0.6.0 | Professional product UI / frontend MVP | UI profesional para login, cuentas, saldo, movimientos, Bizum y chat conectado a API | Permite demo real de producto sin depender de Swagger [2] |
-| 7 | v0.7.0 | Conversational UX & persistent chat history | Historial persistente, recuperación por sesión/usuario, mejoras de UX de chat | Introduce continuidad conversacional real [3] |
-| 8 | v0.8.0 | Observability & evaluation foundations | Trazas end-to-end, dataset inicial de evaluación, métricas de calidad, logging estructurado | Observability + evals son base de agentes en producción [4][5] |
-| 9 | v0.9.0 | Guardrails & safe fintech interaction | Validación de inputs, control de outputs, anti prompt-injection, modo read-only reforzado, políticas seguras | Safety y guardrails separan prototipo de sistema fiable [6][7] |
-| 10 | v1.0.0 | Deployment-ready MVP | Docker, CI/CD, deploy backend/frontend, configuración por entorno, release checklist | Koi pasa de proyecto local a MVP desplegable [8][9] |
-| 11 | v1.1.0 | Memory architecture & user context | Memoria corto/largo plazo, preferencias de usuario, políticas de retención y borrado | Separa memoria, perfil y contexto operativo del agente [10] |
-| 12 | v1.2.0 | Retrieval & banking knowledge layer | RAG para FAQs, políticas y glosario, retrieval refinement, grounding y evaluación de retrieval | Añade conocimiento bancario verificable al agente [11][12] |
-| 13 | v1.3.0 | Orchestration architecture with LangGraph | Grafo explícito, planner/router, synthesis, retries, fallbacks, branching | Arquitectura agentic observable y controlada [13] |
-| 14 | v1.4.0 | Frontend product experience | UI de producto conectada a API y agente, historial persistente visible, demo end-to-end | Convierte Koi en una experiencia de producto enseñable [3] |
-| 15 | v1.5.0 | Human-in-the-loop & approval workflows | HITL para casos ambiguos o sensibles, aprobación manual, auditoría de decisiones | Muy relevante en finanzas por control y accountability [14][15][16] |
-| 16 | v1.6.0 | Governance, auditability & compliance posture | Audit trail, redacción de datos sensibles, versionado de prompts/policies, catálogo de riesgos | Gobernanza y trazabilidad de nivel enterprise [17][12] |
-| 17 | v1.7.0 | Advanced evals & safety scorecards | Evals offline/online, benchmarks regresivos, edge cases financieros, scorecards por tool/intent | Permite medir calidad, seguridad y regresiones [4][5] |
-| 18 | v1.8.0 | Multi-model strategy & cost-performance routing | Routing entre modelos por coste, latencia y calidad, fallback entre proveedores, telemetría de coste | Arquitectura moderna optimizada para producción [10] |
-| 19 | v1.9.0 | Platformization & external integrations | API madura, integraciones externas, capacidades tipo MCP/tools contracts | Prepara Koi para ecosistemas multi-agente [13] |
+| 4 | v0.4.0 | API hardening, persistence & quality | HTTPBearer/JWT, **SQLite persistence with SQLModel for banking data and chat messages**, errores robustos, tests ampliados, README y CHANGELOG | Base backend seria para evolucionar a producto |
+| 5 | v0.5.0 | Conversational banking core with LLM taxonomy, intent detection, entity resolution and clarification | **Taxonomía cerrada de intents y entidades bancarias**; `intent_agent` con salida estructurada (`intent`, `confidence`, `entities`, `missing_entities`, `needs_clarification`, `tool_candidates`); tools bancarias read-only (`get_balance`, `get_accounts`, `get_recent_transactions`, `get_recent_bizum`); **entity resolution** sobre mensaje y contexto; **desambiguación multi-turno real** para respuestas de aclaración; validación determinista mínima (schema, confidence, guardrails); persistencia básica de decisiones y trazas; tests funcionales multi-turno | Primer núcleo conversacional bancario productivo: separa comprensión semántica, resolución de contexto y ejecución segura de tools, reduciendo la lógica ad hoc a validación y control |
+| 6 | v0.6.0 | Professional product UI / frontend MVP | UI profesional para login, cuentas, saldo, movimientos, Bizum y chat conectado a la API | Permite demo real de producto sin depender de Swagger |
+| 7 | v0.7.0 | Conversational UX, session state & persistent chat history | Historial persistente, recuperación por sesión y usuario, estado conversacional visible, continuidad de aclaraciones pendientes, mejoras de UX de chat | Introduce continuidad conversacional real y consolida el diálogo multi-turno sobre el core LLM del sprint 5 |
+| 8 | v0.8.0 | Observability & evaluation foundations | Trazas end-to-end, dataset inicial de evaluación, métricas de calidad por intent, entity resolution y clarification, logging estructurado | Observability y evals pasan a medir no solo respuestas, sino también clasificación, slots y desambiguación, que son base de asistentes en producción |
+| 9 | v0.9.0 | Guardrails & safe fintech interaction | Validación de inputs, control de outputs, anti prompt-injection, modo read-only reforzado, políticas seguras | Safety y guardrails separan el core conversacional funcional de un sistema fintech fiable y gobernado |
+| 10 | v1.0.0 | Deployment-ready MVP | Docker, CI/CD, despliegue backend/frontend, configuración por entorno, release checklist | Koi pasa de proyecto local a MVP desplegable |
+| 11 | v1.1.0 | Memory architecture & user context | Memoria corto/largo plazo, preferencias de usuario, políticas de retención y borrado | Separa memoria, perfil y contexto operativo del agente |
+| 12 | v1.2.0 | Retrieval & banking knowledge layer | RAG para FAQs, políticas y glosario, retrieval refinement, grounding y evaluación de retrieval | Añade conocimiento bancario verificable al agente |
+| 13 | v1.3.0 | Orchestration architecture with LangGraph | Grafo explícito, planner/router, synthesis, retries, fallbacks y branching | Arquitectura agentic observable y controlada |
+| 14 | v1.4.0 | Frontend product experience | UI de producto conectada a API y agente, historial persistente visible, demo end-to-end | Convierte Koi en una experiencia de producto enseñable |
+| 15 | v1.5.0 | Human-in-the-loop & approval workflows | HITL para casos ambiguos o sensibles, aprobación manual, auditoría de decisiones | Muy relevante en finanzas por control y accountability |
+| 16 | v1.6.0 | Governance, auditability & compliance posture | Audit trail, redacción de datos sensibles, versionado de prompts y policies, catálogo de riesgos | Gobernanza y trazabilidad de nivel enterprise |
+| 17 | v1.7.0 | Advanced evals & safety scorecards | Evals offline y online, benchmarks regresivos, edge cases financieros, scorecards por tool e intent | Permite medir calidad, seguridad y regresiones |
+| 18 | v1.8.0 | Multi-model strategy & cost-performance routing | Routing entre modelos por coste, latencia y calidad, fallback entre proveedores, telemetría de coste | Arquitectura moderna optimizada para producción |
+| 19 | v1.9.0 | Platformization & external integrations | API madura, integraciones externas, capacidades tipo MCP y contracts de tools | Prepara Koi para ecosistemas multi-agente |
 | 20 | v2.0.0 | Enterprise-grade fintech copilot showcase | Demo estable end-to-end, arquitectura documentada, casos de uso de negocio, storytelling técnico | Posiciona Koi como portfolio senior de AI Engineer / Solutions Architect |
+
 
 [cite:300]
 

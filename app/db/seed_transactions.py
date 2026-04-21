@@ -18,9 +18,7 @@ def seed_transactions(session: Session) -> None:
     tx_counter = 1
     for account in accounts:
         # buscamos el usuario asociado a la cuenta
-        user = session.exec(
-            select(User).where(User.user_id == account.user_id)
-        ).first()
+        user = session.exec(select(User).where(User.user_id == account.user_id)).first()
         if not user:
             continue
 
@@ -33,7 +31,7 @@ def seed_transactions(session: Session) -> None:
                 booking_date=today - timedelta(days=i),
                 amount=round(50 * (i + 1) * (-1 if i % 2 == 0 else 1), 2),
                 currency=account.currency,
-                description=f"Movimiento demo {i+1} en {account.alias}",
+                description=f"Movimiento demo {i + 1} en {account.alias}",
                 category="demo",
             )
             session.add(tx)

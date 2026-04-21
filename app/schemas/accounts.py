@@ -7,7 +7,8 @@ class AccountPublic(BaseModel):
     alias: str
     balance: float
     currency: str
-    
+
+
 class BalanceSummary(BaseModel):
     user_id: str
     currency: str

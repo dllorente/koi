@@ -14,15 +14,13 @@ router = APIRouter(prefix="/accounts", tags=["accounts"])
 
 @router.get("/", response_model=list[AccountPublic])
 def list_accounts(
-    session: Session = Depends(get_session),
-    current_user = Depends(get_current_user)
+    session: Session = Depends(get_session), current_user=Depends(get_current_user)
 ):
     return get_public_accounts_by_user_id(session, current_user.user_id)
 
 
 @router.get("/summary", response_model=BalanceSummaryDetailed)
 def get_accounts_summary(
-    session: Session = Depends(get_session),
-    current_user = Depends(get_current_user)
+    session: Session = Depends(get_session), current_user=Depends(get_current_user)
 ):
     return get_detailed_balance_summary_by_user_id(session, current_user.user_id)

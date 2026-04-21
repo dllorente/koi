@@ -15,7 +15,7 @@ def chat(
     request: ChatRequest,
     session: Session = Depends(get_session),
     current_user: UserPublic = Depends(get_current_user),
-)-> ChatResponse:
+) -> ChatResponse:
     return handle_chat(
         session=session,
         message=request.message,

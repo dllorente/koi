@@ -1,11 +1,12 @@
 from fastapi import Depends, HTTPException, status
 
-#from app.data.users import get_user_by_id, parse_mock_token
+# from app.data.users import get_user_by_id, parse_mock_token
 from app.core.security import decode_access_token, get_bearer_token
 from app.data.users import get_user_by_id
 from app.schemas.user import UserPublic
 from sqlmodel import Session
 from app.db.database import get_session
+
 
 def get_current_user(
     token: str = Depends(get_bearer_token),

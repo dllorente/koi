@@ -12,10 +12,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(
-    payload: UserLoginRequest,
-    session: Session = Depends(get_session)
-):
+def login(payload: UserLoginRequest, session: Session = Depends(get_session)):
     user = authenticate_user(session, payload.email, payload.password)
 
     if not user:

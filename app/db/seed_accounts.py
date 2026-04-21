@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 
 from app.db.models import User, Account
-from app.data.accounts import DEMO_ACCOUNTS  
+from app.data.accounts import DEMO_ACCOUNTS
 
 
 def seed_accounts(session: Session) -> None:

@@ -19,6 +19,8 @@ pwdlib = {extras = ["argon2"], version = "^0.3.0"}
 pyjwt = "^2.12.1"
 sqlmodel = "^0.0.38"
 httpx = "^0.28.1"
+streamlit = "^1.56.0"
+requests = "^2.33.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"

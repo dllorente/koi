@@ -46,6 +46,7 @@ class ChatSuggestion(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     intent: ChatIntent
+    session_id: str
     data: dict[str, Any] | None = None
     suggestions: list[ChatSuggestion] = []
     ui_hints: dict[str, Any] | None = None

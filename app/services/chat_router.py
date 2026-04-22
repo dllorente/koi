@@ -1,6 +1,7 @@
 import json
 import re
 import unicodedata
+from uuid import uuid4
 
 from sqlmodel import Session, select
 
@@ -108,6 +109,7 @@ def detect_intent_rule_based(message: str) -> IntentDecision:
         tool_name=_get_tool_name_for_intent(ChatIntent.FALLBACK),
     )
 
+
 def detect_intent(message: str) -> ChatIntent:
     decision = classify_intent(message)
 
@@ -115,6 +117,7 @@ def detect_intent(message: str) -> ChatIntent:
         decision = detect_intent_rule_based(message)
 
     return decision.intent
+
 
 def _get_entity_value(decision: IntentDecision, name: str) -> str | None:
     for entity in decision.entities:
@@ -282,6 +285,8 @@ def handle_chat(
         role="user",
         content=message,
     )
+    if not session_id or session_id == "default":
+        session_id = str(uuid4())
 
     decision = _resolve_pending_clarification(
         session=session,
@@ -322,6 +327,7 @@ def handle_chat(
         response = ChatResponse(
             answer=decision.clarification_question
             or "Necesito un poco más de información para ayudarte.",
+            session_id=session_id,
             intent=intent,
             data={
                 "entities": _serialize_entities(decision),
@@ -374,6 +380,7 @@ def handle_chat(
                         f"{matched_account.balance} {matched_account.currency}."
                     ),
                     intent=intent,
+                    session_id=session_id,
                     data={
                         "account_id": matched_account.account_id,
                         "alias": matched_account.alias,
@@ -425,6 +432,7 @@ def handle_chat(
                 f"repartido en {summary.account_count} cuentas."
             ),
             intent=intent,
+            session_id=session_id,
             data={
                 "total_balance": summary.total_balance,
                 "currency": summary.currency,
@@ -474,6 +482,7 @@ def handle_chat(
             response = ChatResponse(
                 answer="No he encontrado cuentas asociadas a tu usuario.",
                 intent=intent,
+                session_id=session_id,
                 data={"accounts": [], "count": 0},
                 suggestions=[
                     ChatSuggestion(
@@ -512,6 +521,7 @@ def handle_chat(
         response = ChatResponse(
             answer="Estas son tus cuentas:\n" + "\n".join(account_lines),
             intent=intent,
+            session_id=session_id,
             data={
                 "accounts": [
                     {
@@ -574,6 +584,7 @@ def handle_chat(
             response = ChatResponse(
                 answer="No he encontrado movimientos recientes.",
                 intent=intent,
+                session_id=session_id,
                 data={"items": [], "count": 0},
                 suggestions=[
                     ChatSuggestion(
@@ -613,6 +624,7 @@ def handle_chat(
         response = ChatResponse(
             answer="Estos son tus últimos movimientos:\n" + "\n".join(lines),
             intent=intent,
+            session_id=session_id,
             data={
                 "items": [
                     {
@@ -672,6 +684,7 @@ def handle_chat(
             response = ChatResponse(
                 answer="No he encontrado actividad reciente de Bizum.",
                 intent=intent,
+                session_id=session_id,
                 data={"items": [], "count": 0},
                 suggestions=[
                     ChatSuggestion(
@@ -711,6 +724,7 @@ def handle_chat(
         response = ChatResponse(
             answer="Esta es tu actividad reciente de Bizum:\n" + "\n".join(lines),
             intent=intent,
+            session_id=session_id,
             data={
                 "items": [
                     {
@@ -775,6 +789,7 @@ def handle_chat(
             response = ChatResponse(
                 answer="No he encontrado Bizum recibidos recientemente.",
                 intent=intent,
+                session_id=session_id,
                 data={"items": [], "count": 0},
                 suggestions=[
                     ChatSuggestion(
@@ -814,6 +829,7 @@ def handle_chat(
         response = ChatResponse(
             answer="Estos son tus últimos Bizum recibidos:\n" + "\n".join(lines),
             intent=intent,
+            session_id=session_id,
             data={
                 "items": [
                     {
@@ -870,6 +886,7 @@ def handle_chat(
     response = ChatResponse(
         answer="Todavía no puedo responder a esa consulta. Por ahora prueba con saldo, cuentas, movimientos o Bizum.",
         intent=intent,
+        session_id=session_id,
         data={
             "reason": decision.reason,
             "confidence": decision.confidence,

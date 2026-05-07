@@ -5,6 +5,22 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-05-07
+
+### Added
+- Agente de intención basado en LLM con salida estructurada (`IntentDecision`) y clasificación de intents bancarios (saldo, cuentas, movimientos, Bizum).
+- Reglas de fallback deterministas para intents frecuentes (saldo, cuentas, movimientos, Bizum) cuando la confianza del LLM está por debajo del umbral configurado.
+- Persistencia de decisiones de intent en base de datos (`intent`, `decision_confidence`, `decision_reason`, entidades y `missing_entities`) para trazabilidad completa de cada turno de conversación.
+- Integración con LangSmith para trazas de clasificación de intent y ruteo de conversación en Sprint 8.
+
+### Changed
+- Router de conversación actualizado para usar un umbral global de confianza (`intent_confidence_threshold`) configurable vía settings en lugar de valores hardcodeados.
+- Lógica de clarificación mejorada para preguntas sobre saldo y movimientos, solicitando `account_alias` cuando el usuario no lo proporciona explícitamente.
+- Mensajes de respuesta enriquecidos con sugerencias de siguiente acción (chips) y `ui_hints` para componentes específicos del frontend (saldo, cuentas, movimientos, Bizum).
+
+### Fixed
+- Inconsistencias en el campo `source` de las decisiones de intent, asegurando valores coherentes (`llm`, `rule_based`, `fallback_low_confidence`, `clarification_resolution`) para facilitar el debugging y el análisis en trazas.
+
 ## [v0.7.0] - 2026-05-07
 
 ### Added

@@ -39,6 +39,17 @@ def health() -> dict:
     return {"status": "ok"}
 
 
+@app.get("/debug/langsmith")
+def debug_langsmith() -> dict:
+    from app.core.config import settings as s
+
+    return {
+        "api_key_present": bool(s.langsmith_api_key),
+        "tracing": s.langsmith_tracing,
+        "project": s.langsmith_project,
+    }
+
+
 app.include_router(auth_router)
 app.include_router(accounts_router)
 app.include_router(transactions_router)

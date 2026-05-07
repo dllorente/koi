@@ -4,6 +4,7 @@ import unicodedata
 
 from datetime import datetime, UTC
 from uuid import uuid4
+from app.core.config import settings
 
 from sqlmodel import Session, select
 
@@ -19,7 +20,6 @@ from app.data.transactions import get_public_transactions_by_user_id
 from app.db.models import ChatMessage, ChatSession
 from app.schemas.chat import ChatIntent, ChatResponse, ChatSuggestion, IntentDecision
 from app.services.chat_taxonomy import (
-    INTENT_OPTIONAL_ENTITIES,
     INTENT_REQUIRED_ENTITIES,
     INTENT_TOOL_MAP,
 )
@@ -34,8 +34,31 @@ def _get_required_entities(intent: ChatIntent) -> list[str]:
     return INTENT_REQUIRED_ENTITIES.get(intent, [])
 
 
-def _get_optional_entities(intent: ChatIntent) -> list[str]:
-    return INTENT_OPTIONAL_ENTITIES.get(intent, [])
+def _build_decision_reason(decision: IntentDecision) -> str:
+    parts: list[str] = []
+
+    # Fuente principal
+    parts.append(f"source={decision.source}")
+
+    # Intento e intensidad
+    parts.append(f"intent={decision.intent.value}")
+    parts.append(f"confidence={decision.confidence:.2f}")
+
+    # Entidades presentes
+    if decision.entities:
+        ent_str = ", ".join(f"{e.name}={e.value}" for e in decision.entities)
+        parts.append(f"entities=[{ent_str}]")
+
+    # Faltan entidades
+    if decision.missing_entities:
+        miss_str = ", ".join(decision.missing_entities)
+        parts.append(f"missing=[{miss_str}]")
+
+    # Clarificación
+    if decision.needs_clarification:
+        parts.append("needs_clarification=True")
+
+    return " | ".join(parts)
 
 
 def _normalize_text(message: str) -> str:
@@ -50,45 +73,57 @@ def _normalize_text(message: str) -> str:
 def detect_intent_rule_based(message: str) -> IntentDecision:
     text = _normalize_text(message)
 
-    if "saldo" in text or "balance" in text or "dinero tengo" in text:
+    if any(phrase in text for phrase in ["saldo", "balance", "dinero tengo"]):
         return IntentDecision(
             intent=ChatIntent.BALANCE_SUMMARY,
             confidence=0.95,
             reason="Detected clear balance-related keywords",
             tool_name=_get_tool_name_for_intent(ChatIntent.BALANCE_SUMMARY),
+            source="rule_based",
         )
 
     if (
         "mis cuentas" in text
         or "que cuentas tengo" in text
-        or text.startswith("cuentas")
+        or text == "cuentas"
+        or text.startswith("cuentas ")
     ):
         return IntentDecision(
             intent=ChatIntent.ACCOUNTS,
             confidence=0.95,
             reason="Detected clear accounts-related keywords",
             tool_name=_get_tool_name_for_intent(ChatIntent.ACCOUNTS),
+            source="rule_based",
         )
 
-    if (
-        "ultimos movimientos" in text
-        or "movimientos recientes" in text
-        or "gastos recientes" in text
-        or "movimientos" in text
+    if any(
+        phrase in text
+        for phrase in [
+            "ultimos movimientos",
+            "movimientos recientes",
+            "gastos recientes",
+            "movimientos",
+        ]
     ):
         return IntentDecision(
             intent=ChatIntent.RECENT_TRANSACTIONS,
             confidence=0.90,
             reason="Detected transactions-related keywords",
             tool_name=_get_tool_name_for_intent(ChatIntent.RECENT_TRANSACTIONS),
+            source="rule_based",
         )
 
-    if "bizum recibidos" in text or "he recibido algun bizum" in text:
+    if (
+        "bizum recibidos" in text
+        or "he recibido algun bizum" in text
+        or ("bizum" in text and "recib" in text)
+    ):
         return IntentDecision(
             intent=ChatIntent.RECEIVED_BIZUM,
             confidence=0.95,
             reason="Detected received Bizum request",
             tool_name=_get_tool_name_for_intent(ChatIntent.RECEIVED_BIZUM),
+            source="rule_based",
         )
 
     if "bizum" in text:
@@ -97,6 +132,7 @@ def detect_intent_rule_based(message: str) -> IntentDecision:
             confidence=0.85,
             reason="Detected generic Bizum request",
             tool_name=_get_tool_name_for_intent(ChatIntent.RECENT_BIZUM),
+            source="rule_based",
         )
 
     return IntentDecision(
@@ -104,14 +140,21 @@ def detect_intent_rule_based(message: str) -> IntentDecision:
         confidence=0.40,
         reason="No clear banking intent detected by rules",
         tool_name=_get_tool_name_for_intent(ChatIntent.FALLBACK),
+        source="rule_based",
     )
 
 
 def detect_intent(message: str) -> ChatIntent:
+    rule_based_decision = detect_intent_rule_based(message)
+
+    if rule_based_decision.intent != ChatIntent.FALLBACK:
+        return rule_based_decision.intent
     decision = classify_intent(message)
 
-    if decision.confidence < 0.6:
+    if decision.confidence < settings.intent_confidence_threshold:
         decision = detect_intent_rule_based(message)
+        decision.source = "fallback_low_confidence"
+        decision.source = "fallback_low_confidence"
 
     return decision.intent
 
@@ -264,6 +307,7 @@ def _resolve_pending_clarification(
                         "normalized_value": _normalize_text(resolved_alias),
                     }
                 ],
+                source="clarification_resolution",
             )
 
     return None
@@ -307,11 +351,20 @@ def handle_chat(
     )
 
     if decision is None:
-        decision = classify_intent(message)
+        rule_based_decision = detect_intent_rule_based(message)
 
-    if decision.confidence < 0.6:
+        if rule_based_decision.intent != ChatIntent.FALLBACK:
+            decision = rule_based_decision
+        else:
+            decision = classify_intent(message)
+
+            if decision.confidence < settings.intent_confidence_threshold:
+                decision = detect_intent_rule_based(message)
+                decision.source = "fallback_low_confidence"
+
+    if decision.confidence < settings.intent_confidence_threshold:
         decision = detect_intent_rule_based(message)
-
+        decision.source = "fallback_low_confidence"
     intent = decision.intent
     normalized_message = _normalize_text(message)
 
@@ -368,7 +421,7 @@ def handle_chat(
             clarification_question=decision.clarification_question,
             entities=_serialize_entities(decision),
             missing_entities=decision.missing_entities,
-            decision_reason=decision.reason,
+            decision_reason=_build_decision_reason(decision),
             decision_confidence=decision.confidence,
         )
         return response
@@ -434,7 +487,7 @@ def handle_chat(
                     clarification_question=None,
                     entities=_serialize_entities(decision),
                     missing_entities=decision.missing_entities,
-                    decision_reason=decision.reason,
+                    decision_reason=_build_decision_reason(decision),
                     decision_confidence=decision.confidence,
                 )
                 return response
@@ -485,7 +538,7 @@ def handle_chat(
             clarification_question=None,
             entities=_serialize_entities(decision),
             missing_entities=decision.missing_entities,
-            decision_reason=decision.reason,
+            decision_reason=_build_decision_reason(decision),
             decision_confidence=decision.confidence,
         )
         return response
@@ -524,7 +577,7 @@ def handle_chat(
                 clarification_question=None,
                 entities=_serialize_entities(decision),
                 missing_entities=decision.missing_entities,
-                decision_reason=decision.reason,
+                decision_reason=_build_decision_reason(decision),
                 decision_confidence=decision.confidence,
             )
             return response
@@ -581,7 +634,7 @@ def handle_chat(
             clarification_question=None,
             entities=_serialize_entities(decision),
             missing_entities=decision.missing_entities,
-            decision_reason=decision.reason,
+            decision_reason=_build_decision_reason(decision),
             decision_confidence=decision.confidence,
         )
         return response
@@ -626,7 +679,7 @@ def handle_chat(
                 clarification_question=None,
                 entities=_serialize_entities(decision),
                 missing_entities=decision.missing_entities,
-                decision_reason=decision.reason,
+                decision_reason=_build_decision_reason(decision),
                 decision_confidence=decision.confidence,
             )
             return response
@@ -687,7 +740,7 @@ def handle_chat(
             clarification_question=None,
             entities=_serialize_entities(decision),
             missing_entities=decision.missing_entities,
-            decision_reason=decision.reason,
+            decision_reason=_build_decision_reason(decision),
             decision_confidence=decision.confidence,
         )
         return response
@@ -726,7 +779,7 @@ def handle_chat(
                 clarification_question=None,
                 entities=_serialize_entities(decision),
                 missing_entities=decision.missing_entities,
-                decision_reason=decision.reason,
+                decision_reason=_build_decision_reason(decision),
                 decision_confidence=decision.confidence,
             )
             return response
@@ -788,7 +841,7 @@ def handle_chat(
             clarification_question=None,
             entities=_serialize_entities(decision),
             missing_entities=decision.missing_entities,
-            decision_reason=decision.reason,
+            decision_reason=_build_decision_reason(decision),
             decision_confidence=decision.confidence,
         )
         return response
@@ -831,7 +884,7 @@ def handle_chat(
                 clarification_question=None,
                 entities=_serialize_entities(decision),
                 missing_entities=decision.missing_entities,
-                decision_reason=decision.reason,
+                decision_reason=_build_decision_reason(decision),
                 decision_confidence=decision.confidence,
             )
             return response
@@ -893,7 +946,7 @@ def handle_chat(
             clarification_question=None,
             entities=_serialize_entities(decision),
             missing_entities=decision.missing_entities,
-            decision_reason=decision.reason,
+            decision_reason=_build_decision_reason(decision),
             decision_confidence=decision.confidence,
         )
         return response
@@ -953,7 +1006,7 @@ def handle_chat(
         clarification_question=None,
         entities=_serialize_entities(decision),
         missing_entities=decision.missing_entities,
-        decision_reason=decision.reason,
+        decision_reason=_build_decision_reason(decision),
         decision_confidence=decision.confidence,
     )
     return response

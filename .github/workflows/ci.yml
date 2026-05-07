@@ -13,6 +13,12 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: test-openai-key
+      LANGCHAIN_ENDPOINT: https://api.smith.langchain.com
+      LANGCHAIN_API_KEY: test-langsmith-key
+      LANGCHAIN_TRACING_V2: "false"
+      LANGCHAIN_PROJECT: koi-ci
     steps:
     - uses: actions/checkout@v4
     

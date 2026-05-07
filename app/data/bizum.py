@@ -4,7 +4,6 @@ from datetime import date
 from app.db.models import BizumEvent
 from app.schemas.bizum import BizumEventPublic, BizumListResponse
 
-
 DEMO_BIZUM = [
     # ... (Movimientos u001 a u010 que ya tenías)
     {

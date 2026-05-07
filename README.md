@@ -2,7 +2,7 @@
 
 Koi is an evolving banking copilot that moves from a secure read-only banking API toward an agentic fintech assistant with persistent conversation, governed tools, modern product UI, and production-oriented orchestration.
 
-Koi is an authenticated, read-only banking co-pilot featuring a decoupled backend, data persistence, a chat feature, an agent-based roadmap, and an initial UI that is already connected to the API
+Koi is an authenticated, read-only banking co-pilot featuring a decoupled backend, data persistence, a chat feature, an agent-based roadmap, and an initial UI that is already connected to the API.
 
 The project is designed as a progressive architecture: first a reliable banking backend, then a conversational layer, then real LLM integration, then stateful orchestration, and finally specialist and advanced agent systems. This staged evolution keeps the platform understandable, testable, and safe while allowing increasingly capable AI features.
 
@@ -98,7 +98,7 @@ CrewAI and Deep Agents are placed in later stages as experimentation layers for 
 
 ## Roadmap
 
-Koi evolves from a read-only banking API into a stateful, observable, agentic fintech copilot through a staged roadmap that introduces conversational UX, LLM features, retrieval, orchestration, and advanced agent capabilities in sequence.
+Koi evolves from a read-only banking API into a stateful, observable, agentic fintech copilot through a staged roadmap that introduces conversational UX, LLM features, retrieval, orchestration, and advanced agent capabilities in sequence.[cite:2061]
 
 | Sprint | Version | Goal | Key deliverables | Architectural value |
 |---|---|---|---|---|
@@ -127,7 +127,7 @@ Koi evolves from a read-only banking API into a stateful, observable, agentic fi
 
 ## Framework adoption path across sprints
 
-To make the evolution explicit, the LangChain ecosystem enters Koi in this sequence:
+To make the evolution explicit, the LangChain ecosystem enters Koi in this sequence:[cite:2061]
 
 - **LangChain core** becomes visible from the moment composable prompt and model logic is formalized.
 - **LLM-ready semantic contracts** are introduced in Sprint 5.
@@ -177,4 +177,4 @@ Koi is intentionally built in stages.
 
 The early stages prioritize correctness, persistence, and banking API foundations. The middle stages introduce conversational continuity, real LLM calls, observability, retrieval, and orchestration. The later stages introduce specialist-agent systems and more advanced experiments such as CrewAI and Deep Agents.
 
-This roadmap keeps the project coherent while making the progression toward a more capable agentic fintech copilot explicit.
+This roadmap keeps the project coherent while making the progression toward a more capable agentic fintech copilot explicit.[cite:2061][cite:2066]

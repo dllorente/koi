@@ -29,6 +29,7 @@ class IntentDecision(BaseModel):
     missing_entities: list[str] = Field(default_factory=list)
     needs_clarification: bool = False
     clarification_question: str | None = None
+    source: str | None = None
 
 
 class ChatRequest(BaseModel):

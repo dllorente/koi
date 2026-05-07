@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from enum import Enum
 from typing import Any
+from datetime import datetime
 
 
 class EntityValue(BaseModel):
@@ -24,15 +25,15 @@ class IntentDecision(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     reason: str | None = None
     tool_name: str | None = None
-    entities: list[EntityValue] = []
-    missing_entities: list[str] = []
+    entities: list[EntityValue] = Field(default_factory=list)
+    missing_entities: list[str] = Field(default_factory=list)
     needs_clarification: bool = False
     clarification_question: str | None = None
 
 
 class ChatRequest(BaseModel):
     message: str
-    session_id: str
+    session_id: str | None = None
 
 
 class ChatSuggestion(BaseModel):
@@ -48,6 +49,39 @@ class ChatResponse(BaseModel):
     intent: ChatIntent
     session_id: str
     data: dict[str, Any] | None = None
-    suggestions: list[ChatSuggestion] = []
+    suggestions: list[ChatSuggestion] = Field(default_factory=list)
     ui_hints: dict[str, Any] | None = None
-    tools_used: list[str] = []
+    tools_used: list[str] = Field(default_factory=list)
+    needs_clarification: bool = False
+    clarification_question: str | None = None
+    decision_confidence: float | None = None
+    decision_reason: str | None = None
+
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    user_id: str | None = None
+    role: str
+    content: str
+    intent: str | None = None
+    tool_name: str | None = None
+    needs_clarification: bool = False
+    clarification_question: str | None = None
+    entities_json: str | None = None
+    missing_entities_json: str | None = None
+    decision_reason: str | None = None
+    decision_confidence: float | None = None
+    created_at: datetime
+
+
+class ChatSessionResponse(BaseModel):
+    session_id: str
+    user_id: str
+    title: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ChatHistoryResponse(BaseModel):
+    session_id: str
+    messages: list[ChatMessageResponse] = Field(default_factory=list)

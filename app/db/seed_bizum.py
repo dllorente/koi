@@ -1,51 +1,36 @@
-from sqlmodel import Session, select
-from datetime import date
-
-from app.db.models import BizumEvent
+from sqlmodel import select
+from app.db.models import BizumEvent, User  # ajusta import según tu estructura
+from app.data.bizum import DEMO_BIZUM
+from sqlmodel import Session
 
 
 def seed_bizum(session: Session) -> None:
-    existing = session.exec(select(BizumEvent)).first()
-    if existing:
-        return
+    for demo in DEMO_BIZUM:
+        # Evitar duplicados por bizum_id
+        existing = session.exec(
+            select(BizumEvent).where(BizumEvent.bizum_id == demo["bizum_id"])
+        ).first()
+        if existing:
+            continue
 
-    items = [
-        BizumEvent(
-            bizum_id="bizum-001",
-            user_id="u001",
-            booking_date=date(2026, 4, 18),
-            amount=25.0,
-            currency="EUR",
-            direction="received",
-            counterparty="Ana",
-            concept="Cena",
-            status="completed",
-        ),
-        BizumEvent(
-            bizum_id="bizum-002",
-            user_id="u001",
-            booking_date=date(2026, 4, 17),
-            amount=12.5,
-            currency="EUR",
-            direction="sent",
-            counterparty="Carlos",
-            concept="Taxi",
-            status="completed",
-        ),
-        BizumEvent(
-            bizum_id="bizum-003",
-            user_id="u001",
-            booking_date=date(2026, 4, 16),
-            amount=40.0,
-            currency="EUR",
-            direction="received",
-            counterparty="Lucía",
-            concept="Regalo compartido",
-            status="completed",
-        ),
-    ]
+        # Asegurar que el usuario existe
+        user_exists = session.exec(
+            select(User).where(User.user_id == demo["user_id"])
+        ).first()
+        if not user_exists:
+            continue
 
-    for item in items:
-        session.add(item)
+        event = BizumEvent(
+            bizum_id=demo["bizum_id"],
+            user_id=demo["user_id"],
+            booking_date=demo["booking_date"],
+            amount=demo["amount"],
+            currency=demo["currency"],
+            direction=demo["direction"],
+            counterparty=demo["counterparty"],
+            concept=demo["concept"],
+            status=demo["status"],
+        )
+        session.add(event)
 
     session.commit()

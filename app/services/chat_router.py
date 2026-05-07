@@ -1,6 +1,8 @@
 import json
 import re
 import unicodedata
+
+from datetime import datetime, UTC
 from uuid import uuid4
 
 from sqlmodel import Session, select
@@ -14,13 +16,8 @@ from app.data.bizum import (
     get_received_bizum_events_by_user_id,
 )
 from app.data.transactions import get_public_transactions_by_user_id
-from app.db.models import ChatMessage
-from app.schemas.chat import (
-    ChatIntent,
-    ChatResponse,
-    ChatSuggestion,
-    IntentDecision,
-)
+from app.db.models import ChatMessage, ChatSession
+from app.schemas.chat import ChatIntent, ChatResponse, ChatSuggestion, IntentDecision
 from app.services.chat_taxonomy import (
     INTENT_OPTIONAL_ENTITIES,
     INTENT_REQUIRED_ENTITIES,
@@ -186,9 +183,9 @@ def _save_chat_message(
         needs_clarification=needs_clarification,
         clarification_question=clarification_question,
         entities_json=json.dumps(entities) if entities is not None else None,
-        missing_entities_json=json.dumps(missing_entities)
-        if missing_entities is not None
-        else None,
+        missing_entities_json=(
+            json.dumps(missing_entities) if missing_entities is not None else None
+        ),
         decision_reason=decision_reason,
         decision_confidence=decision_confidence,
     )
@@ -276,8 +273,16 @@ def handle_chat(
     session: Session,
     message: str,
     user_id: str,
-    session_id: str,
+    session_id: str | None,
 ) -> ChatResponse:
+    chat_session = _get_or_create_session(
+        session=session,
+        session_id=None if session_id == "default" else session_id,
+        user_id=user_id,
+        initial_message=message,
+    )
+    session_id = chat_session.session_id
+
     _save_chat_message(
         session=session,
         session_id=session_id,
@@ -285,6 +290,12 @@ def handle_chat(
         role="user",
         content=message,
     )
+
+    chat_session.updated_at = datetime.now(UTC)
+    session.add(chat_session)
+    session.commit()
+    session.refresh(chat_session)
+
     if not session_id or session_id == "default":
         session_id = str(uuid4())
 
@@ -338,7 +349,11 @@ def handle_chat(
             },
             suggestions=[],
             ui_hints={"component": "clarification_message"},
-            tools_used=[],
+            tools_used=[decision.tool_name] if decision.tool_name else [],
+            needs_clarification=True,
+            clarification_question=decision.clarification_question,
+            decision_confidence=decision.confidence,
+            decision_reason=decision.reason,
         )
 
         _save_chat_message(
@@ -923,7 +938,7 @@ def handle_chat(
             ),
         ],
         ui_hints={"component": "fallback_message"},
-        tools_used=[],
+        tools_used=[decision.tool_name] if decision.tool_name else [],
     )
 
     _save_chat_message(
@@ -942,3 +957,34 @@ def handle_chat(
         decision_confidence=decision.confidence,
     )
     return response
+
+
+def _get_or_create_session(
+    session: Session,
+    session_id: str | None,
+    user_id: str,
+    initial_message: str | None = None,
+) -> ChatSession:
+    if session_id:
+        existing = session.exec(
+            select(ChatSession).where(ChatSession.session_id == session_id)
+        ).first()
+
+        if existing:
+            existing.updated_at = datetime.now(UTC)
+            session.add(existing)
+            session.commit()
+            session.refresh(existing)
+            return existing
+
+    new_session = ChatSession(
+        session_id=session_id or str(uuid4()),
+        user_id=user_id,
+        title=((initial_message or "").strip()[:60] or "Nueva conversación"),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    session.add(new_session)
+    session.commit()
+    session.refresh(new_session)
+    return new_session

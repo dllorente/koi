@@ -5,7 +5,24 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.0] - Unreleased
+## [v0.7.0] - 2026-05-07
+
+### Added
+- Modelo `ChatSession` con persistencia en SQLite para gestionar sesiones de chat por usuario.
+- Endpoints `GET /chat/sessions` y `GET /chat/sessions/{session_id}/messages` para listar sesiones y recuperar el historial de mensajes de una sesión.
+- Títulos automáticos de sesión generados a partir del primer mensaje del usuario, con fallback a un nombre genérico cuando el texto está vacío.
+- Sidebar en la UI de Streamlit con listado de sesiones, selector y botón para cargar el historial de una sesión guardada.
+- Integración de los metadatos del asistente (`intent`, `tools_used`, `needs_clarification`, `decision_confidence`, `decision_reason`) en el historial al recargar una sesión.
+
+### Changed
+- Flujo de creación de sesión: el frontend usa `session_id = "default"` solo como marcador inicial y adopta el `session_id` real devuelto por el backend tras el primer mensaje.
+- Esquemas de respuesta de FastAPI para sesiones y mensajes (`ChatSessionResponse`, `ChatMessageResponse`) tipados con `datetime` y configurados con `from_attributes=True` para serialización correcta.
+
+### Fixed
+- Errores de validación de respuesta (`ResponseValidationError`) en los endpoints de sesiones y mensajes causados por tipos incorrectos (`str` vs `datetime`) y campos requeridos no presentes (`session_id` en mensajes).
+- Desincronización entre el estado de sesiones en la UI y el backend, asegurando ahora que el selector muestre las sesiones reales y cargue el historial correcto.
+
+## [0.6.0] - 2026-05-03
 ### Added
 - Conversational banking UI for interactive testing of multi-turn chat flows.
 - Session-aware chat view with message history and suggestion chips.

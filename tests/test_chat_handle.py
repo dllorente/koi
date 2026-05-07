@@ -6,7 +6,6 @@ from app.db.seed_users import seed_users
 from app.schemas.chat import ChatIntent
 from app.services.chat_router import handle_chat
 
-
 DEMO_USER_ID = "u001"
 TEST_SESSION_ID = "test-session-1"
 

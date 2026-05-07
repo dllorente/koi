@@ -4,7 +4,6 @@ import unicodedata
 from app.schemas.chat import ChatIntent, EntityValue, IntentDecision
 from app.services.chat_taxonomy import INTENT_TOOL_MAP
 
-
 KNOWN_ACCOUNT_ALIASES = {
     "nomina": "Nómina",
     "ahorro": "Ahorro",

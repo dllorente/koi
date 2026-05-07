@@ -1,270 +1,180 @@
 # Koi
 
-Koi is an AI banking copilot project built from scratch as a sprint-based MVP.
+Koi is an evolving banking copilot that moves from a secure read-only banking API toward an agentic fintech assistant with persistent conversation, governed tools, modern product UI, and production-oriented orchestration.
 
-The name stands for **Know your Own fInances** and represents the idea of a secure, read-only banking assistant focused on authenticated personal finance queries.[cite:12]
+Koi is an authenticated, read-only banking co-pilot featuring a decoupled backend, data persistence, a chat feature, an agent-based roadmap, and an initial UI that is already connected to the API
 
----
+The project is designed as a progressive architecture: first a reliable banking backend, then a conversational layer, then real LLM integration, then stateful orchestration, and finally specialist and advanced agent systems. This staged evolution keeps the platform understandable, testable, and safe while allowing increasingly capable AI features.
 
-## Current status
+## Vision
 
-### Sprint 1 completed
-- Poetry-based project setup.[cite:12]
-- FastAPI base application.[cite:12]
-- Health check endpoint.[cite:12]
-- Initial repository structure.[cite:12]
-- Semantic versioning and initial project documentation.[cite:12]
+Koi aims to become a fintech copilot capable of understanding banking questions, maintaining conversational context, using trusted banking tools, retrieving grounded knowledge, and progressively evolving toward orchestrated agent workflows.
 
-### Sprint 2 completed
-- Mock authentication flow with demo users.[cite:12]
-- Protected user resolution based on Bearer token.[cite:34]
-- Authenticated `/auth/me` endpoint.[cite:34]
-- Mock accounts dataset linked to authenticated users.[cite:12]
-- `/accounts` endpoint for authenticated account listing.[cite:12]
-- `/accounts/summary` endpoint for consolidated balance summary.[cite:12]
-- Mock transactions dataset and recent transaction queries.[cite:12]
-- `/transactions/recent` endpoint for authenticated recent activity.[cite:12]
-- `/transactions/accounts/{account_id}` endpoint with ownership validation.[cite:12][cite:34]
-- Mock Bizum dataset and user activity queries.[cite:12]
-- `/bizum/recent` and `/bizum/received` endpoints.[cite:12]
-- Refactor from `models/` to `schemas/` for Pydantic API contracts.[cite:60]
+The platform starts from deterministic and controlled foundations, then adds semantic understanding, memory, retrieval, observability, graph orchestration, specialist agents, and later experimentation with more advanced agent architectures.
 
-### Sprint 3 completed
-- `/chat` endpoint protected by JWT Bearer auth.[cite:300]
-- `ChatIntent` enum and deterministic routing based on normalized Spanish banking queries (saldo, cuentas, movimientos, Bizum).[cite:300]
-- `handle_chat` service returning structured responses with `answer`, `intent`, `data`, `suggestions` (chips) and `ui_hints` for frontend integration.[cite:300]
-- Unit tests covering all main intents (saldo, cuentas, movimientos, Bizum reciente, Bizum recibidos, fallback).[cite:742]
+## Current direction
 
-### Sprint 4 completed
-- Migration from fully mocked datasets to **real SQLite persistence** using **SQLModel** for users, accounts, transactions, Bizum events and chat messages.[web:866][web:863]
-- Application startup lifecycle creating tables and seeding demo banking data automatically for local development.[web:866]
-- `/chat` endpoint now persisting both user and assistant messages into `chatmessage` with `user_id`, `session_id`, `role`, `content` and `created_at`.[web:866]
-- Verified end-to-end flow: `auth/login` → `auth/me` → `/chat` → messages stored in SQLite and queryable by `session_id`.[web:866]
-- README / roadmap aligned to reflect the new persistence and chat history foundations.[file:710]
+Koi follows a layered stack:
 
-### Sprint 5 delivered the first production-oriented conversational banking core:
-- banking taxonomy,
-- structured intent classification,
-- entity extraction and resolution,
-- real clarification flow,
-- persisted chat traces,
-- deterministic validation and fallback.
+- FastAPI as backend application and API surface.
+- Streamlit as temporary product UI and validation layer.
+- LangChain as the composable LLM application layer.
+- LangSmith as the observability and evaluation layer.
+- LangServe as the deployment exposure layer for chains, graphs, and agents.
+- LangGraph as the stateful orchestration layer for agent workflows.
+- Next.js as the target professional frontend in later stages.
+- CrewAI and Deep Agents as later experimentation layers, not as the initial product core.
 
----
+## Architectural evolution
 
-## Tech stack
+The project does not jump directly into multi-agent complexity. Instead, it evolves in a sequence of increasing capability.
 
-- Python.[cite:4]
-- Poetry.[cite:12]
-- FastAPI.[cite:4]
-- Pydantic.[cite:12]
-- **SQLModel + SQLite for database models and persistence.**[web:866]
-- Uvicorn.[cite:12]
-- PyJWT / python-jose-style JWT handling for access tokens.[web:730]
+1. Secure banking API and persistence.
+2. Conversational chat UX and session continuity.
+3. LLM-ready semantic contracts.
+4. First real LLM calls with structured output.
+5. Retrieval and grounding.
+6. Stateful orchestration with LangGraph.
+7. Product-grade frontend and deployment split.
+8. Specialist agents and governed tools.
+9. Advanced agent experimentation.
 
----
+## LangChain ecosystem in Koi
 
-## Project structure
+Koi uses the LangChain ecosystem as a progressive stack rather than as a single isolated library.
 
-```bash
-koi/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── deps.py
-│   │   └── routes/
-│   │       ├── __init__.py
-│   │       ├── auth.py
-│   │       ├── accounts.py
-│   │       ├── transactions.py
-│   │       ├── bizum.py
-│   │       └── chat.py
-│   ├── core/
-│   │   ├── __init__.py
-│   │   └── security.py
-│   ├── data/
-│   │   ├── users.py
-│   │   ├── accounts.py
-│   │   ├── transactions.py
-│   │   └── bizum.py
-│   ├── db/
-│   │   ├── __init__.py
-│   │   └── models.py    # SQLModel definitions (User, Account, Transaction, BizumEvent, ChatMessage)
-│   └── schemas/
-│       ├── __init__.py
-│       ├── user.py
-│       ├── auth.py
-│       ├── account.py
-│       ├── transaction.py
-│       ├── bizum.py
-│       └── chat.py
-├── tests/
-├── .env
-├── .gitignore
-├── pyproject.toml
-├── README.md
-└── CHANGELOG.md
-```
+### Sequential LangChain adoption
 
-[cite:12][cite:300][web:866]
+| Stage | Capability | Usage in Koi | Outcome |
+|---|---|---|---|
+| 1 | LangChain core | Base abstractions for prompts, chat models, output parsing, retrievers, and composable chains | Provides a modular LLM application foundation |
+| 2 | Runnables / LCEL | Composition of prompt-model-parser and retriever-model flows with `invoke`, `batch`, and `stream` patterns | Makes pipelines composable, testable, and easier to evolve |
+| 3 | Structured output | Intent classification, entity extraction, clarification state, and machine-usable contracts | Replaces fragile free-form parsing with reliable schemas |
+| 4 | Tools | Banking operations, retrieval functions, and external capabilities exposed as callable tools | Prepares the system for controlled tool usage |
+| 5 | Agents | Model-driven decision making and tool selection beyond deterministic routing | Moves Koi from chat app toward agentic copilot |
+| 6 | LangServe | Exposure of chains, graphs, and agents through API endpoints such as `/invoke` and `/stream` | Separates backend execution from frontend consumption |
+| 7 | LangSmith | Tracing, evaluations, monitoring, and run inspection for LLM workflows | Makes the system observable and safer to evolve |
+| 8 | LangGraph | Stateful orchestration with nodes, edges, branching, retries, and checkpoints | Enables robust, controllable agent workflows |
+| 9 | Multi-agent expansion | Specialist agents, governed tools, and controlled handoffs | Extends Koi into modular agent systems |
+| 10 | Deep agent experimentation | Exploration of deeper reasoning and complex multi-step workflows | Adds a path toward more advanced agent architectures |
 
----
+### LangChain capabilities used or planned
 
-## Run locally
+#### LangChain core
 
-```bash
-poetry install
-poetry run uvicorn app.main:app --reload
-```
+LangChain provides the core abstractions for prompts, chat models, retrievers, output parsing, and chain composition. In Koi, this layer is the base from which the conversational and agentic capabilities evolve.
 
-On startup, the app will:
+#### Runnables and LCEL
 
-- create SQLite tables with SQLModel,
-- seed demo users, accounts, transactions and Bizum events,
-- prepare the `chatmessage` table to persist chat history.[web:866]
+Koi progressively adopts the Runnable interface to standardize execution through `invoke`, `batch`, and `stream`. This makes the system easier to compose and extend as new retrieval, classification, and orchestration steps are added.
 
-[cite:12][web:866]
+#### Structured output
 
----
+A key evolution in Koi is the move from free-form responses toward structured outputs for intent detection, entities, clarification flags, and planner-friendly machine-readable state.
 
-## Available endpoints
+#### Tools
 
-### Public
+Koi evolves toward a tool-oriented architecture where banking capabilities and retrieval functions are represented as explicit callable tools. These tools later become typed and governed for safer execution.
 
-```bash
-GET  /health        # Health check
-POST /auth/login    # Obtain JWT access token for demo user
-```
+#### Agents
 
-[cite:12][cite:300]
+Agent capabilities are introduced gradually. Koi starts with controlled routing and later moves toward model-based decision making, tool use, and specialist execution paths.
 
-### Protected (JWT Bearer)
+#### LangServe
 
-All these endpoints expect an `Authorization: Bearer <access_token>` header containing a signed JWT created with `create_access_token(subject)`, where `subject` is typically the user identifier.[web:730][cite:698]
+LangServe exposes chains, graphs, and agent flows as API endpoints. This layer allows the frontend to consume a stable agent interface while backend execution remains decoupled.
 
-```bash
-GET  /auth/me
-GET  /accounts
-GET  /accounts/summary
-GET  /transactions/recent
-GET  /transactions/accounts/{account_id}
-GET  /bizum/recent
-GET  /bizum/received
-POST /chat
-```
+#### LangSmith
 
-- `POST /chat`: rule-based banking chat endpoint that detects `ChatIntent` and returns structured responses (`answer`, `intent`, `data`, `suggestions`, `ui_hints`) for queries like balance, accounts, recent movements, Bizum activity, and fallback.[cite:300][cite:742]
-- The chat endpoint **persists each turn** into `chatmessage` with `user_id` (from JWT), `session_id` (from request), `role` (`user` / `assistant`) and `content`, enabling conversation history queries per session.[web:866]
+LangSmith is the observability and evaluation layer of Koi. It enables tracing, evaluation datasets, inspection of runs, and safer iteration on prompts, chains, tools, and graphs.
 
----
+#### LangGraph
 
-## Chat persistence model
+LangGraph is the framework used when Koi moves from composable LLM pipelines into stateful orchestrated workflows. It provides explicit state, routing, branching, retries, and controlled execution for more advanced banking flows.
 
-The authentication token identifies **who** is calling the API, while `session_id` identifies **which conversation thread** the message belongs to.
+#### CrewAI and Deep Agents
 
-Current design:
+CrewAI and Deep Agents are placed in later stages as experimentation layers for more advanced collaborative or deeper reasoning workflows. They are not the initial architectural core of Koi.
 
-- `user_id`: resolved from the JWT and stored with each message.[web:782]
-- `session_id`: provided by the client; groups messages belonging to the same conversation.[web:878]
-- `role`: `"user"` or `"assistant"`.
-- `content`: stored chat message text.
-- `created_at`: timestamp for message ordering.
+## Roadmap
 
-This allows the same authenticated user to hold **multiple independent chat sessions** by using different `session_id` values.
+Koi evolves from a read-only banking API into a stateful, observable, agentic fintech copilot through a staged roadmap that introduces conversational UX, LLM features, retrieval, orchestration, and advanced agent capabilities in sequence.
 
-> In the current MVP, the client is responsible for generating and sending `session_id` (e.g. a UUID) when starting a new chat. A future sprint will introduce a formal `ChatSession` model and dedicated endpoints to create and list chat sessions.[web:878][cite:881]
-
----
-
-## Health check
-
-```bash
-GET /health
-```
-
-Expected response:
-
-```json
-{"status": "ok"}
-```
-
-[cite:12]
-
----
-
-## Notes
-
-- Authentication uses **JWT access tokens** signed with a secret key and expiration; banking datasets (users, accounts, transactions, Bizum) are now backed by **SQLite + SQLModel** instead of pure in-memory mocks.[web:866][cite:698]
-- Protected endpoints are validated by the backend via a dependency that decodes the JWT and resolves the current user; Swagger UI can be used for manual exploration, but `curl` or API clients (HTTPie, Postman) are recommended to control the `Authorization` header explicitly.[cite:34]
-- Future hardening will include stronger password hashing for demo users, refined token lifetime/refresh strategies, and **formal chat session management** (backend-driven or frontend-coordinated session creation) on top of the current `session_id`-based persistence.[cite:35][web:878]
-
----
-
-# Koi Roadmap
-
-Koi evoluciona desde una API bancaria read-only hacia un **fintech copilot agentic** con arquitectura conversacional, **frontend de producto profesional**, observabilidad, seguridad, memoria y capacidades enterprise.  
-El punto de inflexión principal está en **v0.5.0**, donde el sistema deja atrás el **routing ad hoc** como mecanismo principal y adopta una base conversacional guiada por **taxonomía, intent detection con LLM, resolución de entidades y aclaración multi-turno**.[cite:112]
-
-A partir de **v1.4.0**, Koi deja de ser solo una demo conversacional y empieza a transformarse en una **experiencia tipo Blue**: una UI bancaria moderna, conectada a una arquitectura de agentes, tools gobernadas, memoria conversacional y trazabilidad de decisiones.[cite:1601][cite:300]
-
-| Sprint | Versión | Objetivo | Entregables clave | Valor arquitectónico |
+| Sprint | Version | Goal | Key deliverables | Architectural value |
 |---|---|---|---|---|
-| 1 | v0.1.0 | Base project scaffolding | Poetry, FastAPI, health check, estructura modular inicial, configuración por entorno | Base mantenible y preparada para crecer |
-| 2 | v0.2.0 | Authenticated read-only banking baseline | Mock auth, demo users, `/auth/me`, cuentas, saldo, transacciones y Bizum mock | Primer contrato funcional de API bancaria read-only |
-| 3 | v0.3.0 | Chat endpoint with rule-based banking routing | `/chat` protegido, `ChatIntent`, router determinista, tests unitarios | Separa intención, handlers y capa de respuesta |
-| 4 | v0.4.0 | API hardening, persistence & quality | HTTPBearer/JWT, SQLite persistence with SQLModel for banking data and chat messages, errores robustos, tests ampliados, README y CHANGELOG | Base backend seria para evolucionar a producto |
-| 5 | v0.5.0 | Conversational banking core with LLM taxonomy, intent detection, entity resolution and clarification | Taxonomía cerrada de intents y entidades bancarias; `intent_agent` con salida estructurada (`intent`, `confidence`, `entities`, `missing_entities`, `needs_clarification`, `tool_candidates`); tools bancarias read-only (`get_balance`, `get_accounts`, `get_recent_transactions`, `get_recent_bizum`); entity resolution sobre mensaje y contexto; desambiguación multi-turno real; validación determinista mínima; persistencia básica de decisiones y trazas; tests funcionales multi-turno | Primer núcleo conversacional bancario productivo: separa comprensión semántica, resolución de contexto y ejecución segura de tools, reduciendo la lógica ad hoc a validación y control [cite:112] |
-| 6 | v0.6.0 | Professional product UI / frontend MVP | Primer frontend de producto para login, cuentas, saldo, movimientos, Bizum y chat conectado a la API; sesiones persistentes; `session_id`; Streamlit queda como prototipo de validación | Permite demo real de producto sin depender de Swagger y separa claramente frontend y backend [cite:12][cite:1601] |
-| 7 | v0.7.0 | Conversational UX, session state & persistent chat history | Historial persistente, recuperación por sesión y usuario, estado conversacional visible, continuidad de aclaraciones pendientes, mejoras de UX de chat | Introduce continuidad conversacional real y consolida el diálogo multi-turno sobre el core LLM del sprint 5 |
-| 8 | v0.8.0 | Observability & evaluation foundations | Trazas end-to-end, dataset inicial de evaluación, métricas de calidad por intent, entity resolution y clarification, logging estructurado | Observability y evals pasan a medir no solo respuestas, sino también clasificación, slots y desambiguación |
-| 9 | v0.9.0 | Guardrails & safe fintech interaction | Validación de inputs, control de outputs, anti prompt-injection, modo read-only reforzado, políticas seguras | Safety y guardrails separan el core conversacional funcional de un sistema fintech fiable |
-| 10 | v1.0.0 | Deployment-ready MVP | Docker, CI/CD, despliegue backend/frontend, configuración por entorno, release checklist | Koi pasa de proyecto local a MVP desplegable |
-| 11 | v1.1.0 | Memory architecture & user context | Memoria corto/largo plazo, preferencias de usuario, políticas de retención y borrado, contexto operativo reutilizable | Separa memoria, perfil y contexto operativo del agente |
-| 12 | v1.2.0 | Retrieval & banking knowledge layer | RAG para FAQs, políticas y glosario, retrieval refinement, grounding y evaluación de retrieval | Añade conocimiento bancario verificable al agente |
-| 13 | v1.3.0 | Orchestration architecture with LangGraph | Grafo explícito, planner/router, synthesis, retries, fallbacks, branching y separación de nodos por responsabilidad | Arquitectura agentic observable, controlada y extensible |
-| 14 | v1.4.0 | Frontend product experience | UI de producto conectada a API y agente, auth, sesiones persistentes, historial visible, chat funcional end-to-end; Streamlit se mantiene como entorno temporal de debugging y validación | Convierte Koi en una experiencia de producto enseñable y prepara el salto a una UI bancaria más premium [cite:12][cite:300] |
-| 15 | v1.5.0 | Blue-like professional UI | Nuevo frontend profesional estilo banca digital moderna inspirado en Blue: Next.js, Tailwind, shadcn/ui, app shell, sidebar de sesiones, topbar, chat premium, cards de cuentas, estados vacíos y UX bancaria consistente | Reemplaza la UI provisional por una experiencia tipo producto real, mucho más alineada con portfolio senior y demo ejecutiva [cite:1601] |
-| 16 | v1.6.0 | Frontend-backend contract & typed client | Cliente tipado desde OpenAPI, contratos estables de sesión/chat, errores UX-friendly, APIs de sesiones, metadata y preparación para streaming | Reduce fricción entre frontend y backend y profesionaliza la integración full-stack |
-| 17 | v1.7.0 | LLM orchestrator & semantic planner | Orquestador LLM-first, semantic intent router, entity resolution consolidada, planner previo a ejecución, política de clarification centralizada | El sistema pasa de responder mensajes a planificar cómo resolver tareas bancarias [cite:112] |
-| 18 | v1.8.0 | Governed tools layer | Catálogo de `tools()` tipadas y auditables para cuentas, saldo, transacciones, Bizum, tarjetas, FAQs y documentos; timeouts, contratos y logs por tool | Convierte las capacidades bancarias en una capa gobernada, observable y reutilizable por agentes |
-| 19 | v1.9.0 | Multi-agent banking architecture | Orchestrator + agentes especialistas (Accounts, Transactions, Cards, Bizum/Payments, Info/RAG, Clarification, Safety/Compliance) con handoffs controlados | Introduce una arquitectura multiagente modular, más cercana a asistentes financieros enterprise [web:1734][web:1737] |
-| 20 | v2.0.0 | Enterprise-grade fintech copilot showcase | Demo estable end-to-end, arquitectura documentada, frontend premium, tools reales, multi-agent orchestration, memoria, observabilidad y storytelling técnico | Posiciona Koi como portfolio senior de AI Engineer / Solutions Architect [cite:1601][cite:12] |
+| 1 | v0.1.0 | Base project scaffolding | Poetry, FastAPI, health check, initial modular structure, environment configuration | Maintainable foundation prepared for growth |
+| 2 | v0.2.0 | Authenticated read-only banking baseline | Mock auth, demo users, `/auth/me`, accounts, balance, transactions, and mock Bizum endpoints | First functional contract for a read-only banking API |
+| 3 | v0.3.0 | Chat endpoint with rule-based banking routing | Protected `/chat`, `ChatIntent`, deterministic router, unit tests | Separates intent, handlers, and response layer |
+| 4 | v0.4.0 | API hardening, persistence, and quality | HTTPBearer/JWT, SQLite persistence with SQLModel for banking data and chat messages, robust errors, expanded tests, README and CHANGELOG | Serious backend base for product evolution |
+| 5 | v0.5.0 | Conversational banking core and LLM-ready semantic architecture | Closed taxonomy of banking intents and entities; structured contract for `intent_agent` (`intent`, `confidence`, `entities`, `missing_entities`, `needs_clarification`, `tool_candidates`); read-only banking tools (`get_balance`, `get_accounts`, `get_recent_transactions`, `get_recent_bizum`); entity resolution across message and context; real multi-turn clarification; minimal deterministic validation; basic persistence of decisions and traces | First production-grade conversational banking core that leaves the system ready for real LLM semantic classification without relying on scattered ad hoc logic |
+| 6 | v0.6.0 | Professional product UI / frontend MVP | First product frontend for login, accounts, balance, movements, Bizum, and chat connected to the API; persistent sessions with `session_id`; Streamlit remains as temporary validation UI | Enables a real product demo without relying on Swagger and establishes Streamlit as temporary UI |
+| 7 | v0.7.0 | Conversational UX, session state, and persistent chat history | Real `ChatSession` handling; persistent history by user and session; recovery of previous messages; continuity of pending clarifications; sidebar or session list; improved chat UX | Introduces real conversational continuity and prepares the base for memory and reusable context |
+| 8 | v0.8.0 | First real LLM integration and observability foundations | First real LLM call for `intent_agent` with structured output (`intent`, `confidence`, `entities`, `missing_entities`, `needs_clarification`); deterministic fallback on low confidence; initial LangSmith integration for traces, evaluation dataset, and classification and clarification metrics | Marks the real start of the LLM layer in Koi, moving from LLM-ready design to observable semantic inference |
+| 9 | v0.9.0 | Guardrails and safe fintech interaction | Input validation, output control, anti prompt-injection, stronger read-only mode, safe interaction policies | Separates a functional conversational core from a safer fintech system |
+| 10 | v1.0.0 | Deployment-ready MVP with LangServe | Docker, CI/CD, environment-based deployment, release checklist, publication of chains or agent capabilities through LangServe, initial `/invoke` and `/stream` integration | Transforms Koi from a local project into a deployable MVP with API exposure for LLM workflows |
+| 11 | v1.1.0 | Memory architecture and user context | Short-term and long-term memory, user preferences, retention and deletion policies, reusable operational context, conversational persistence design over DynamoDB | Separates memory, profile, and operational context and prepares scalable conversation persistence |
+| 12 | v1.2.0 | Retrieval and banking knowledge layer | RAG for FAQs, policies, glossary, and banking content; retrieval refinement; grounding; retrieval evaluation; S3 storage for source documents and artifacts; OpenSearch as vector store | Adds grounded banking knowledge and consolidates retrieval as a core capability |
+| 13 | v1.3.0 | LangGraph orchestration architecture | Explicit graph with LangGraph, planner or router, synthesis, retries, fallbacks, branching, node separation by responsibility, PostgreSQL for technical checkpoint persistence | Marks the explicit move from chain-based application to graph-based agent system |
+| 14 | v1.4.0 | Frontend product bridge | Product UI connected to API and agent, auth, persistent sessions, visible history, working end-to-end chat; Streamlit remains as transitional frontend while migration to Next.js is prepared | Turns Koi into a demonstrable product experience and prepares migration toward a professional web frontend |
+| 15 | v1.5.0 | Next.js professional frontend | New professional frontend in Next.js inspired by modern digital banking UX: Tailwind, shadcn/ui, app shell, session sidebar, topbar, premium chat, account cards, empty states, consistent banking UX | Introduces a real product-grade web frontend separated from the backend |
+| 16 | v1.6.0 | Frontend-backend split and typed client | Separate frontend server and backend server deployment; typed client generated from OpenAPI; stable contracts for chat and session APIs; streaming-ready interfaces; repository abstraction to decouple local and cloud persistence | Formalizes the architectural split between client and server and stabilizes full-stack integration |
+| 17 | v1.7.0 | LangChain runnables and composable execution layer | Explicit adoption of Runnable-based composition for prompt-model-parser and retriever-model flows; standardization around `invoke`, `batch`, and `stream`; better separation between business endpoints and LLM execution components | Makes the LLM layer composable, reusable, and easier to test and evolve |
+| 18 | v1.8.0 | Governed and structured tools layer | Catalog of typed and auditable tools for accounts, balance, transactions, Bizum, cards, FAQs, and documents; timeouts, contracts, structured inputs, and logs per tool; S3 for long execution artifacts | Converts capabilities into governed tools that can be safely reused by agents |
+| 19 | v1.9.0 | Specialist agents with LangGraph | Orchestrator plus specialist agents for Accounts, Transactions, Cards, Bizum or Payments, Information or RAG, Clarification, and Safety or Compliance, implemented on LangGraph with controlled handoffs | Introduces a modular specialist-agent architecture with control and traceability |
+| 20 | v2.0.0 | Enterprise-grade fintech copilot showcase | Stable end-to-end demo, documented architecture, premium frontend, real tools, memory, observability, graph orchestration, and advanced storytelling of the system | Presents Koi as a mature fintech copilot platform |
+| 21 | v2.1.0 | CrewAI experimentation layer | Evaluation of CrewAI for collaborative multi-agent scenarios, delegation experiments, and comparison with LangGraph-based specialist orchestration | Explores a more collaborative multi-agent approach without changing the product core too early |
+| 22 | v2.2.0 | Deep Agents experimentation layer | Evaluation of deeper-reasoning agent approaches for hierarchical planning, complex multi-step execution, and advanced workflow reasoning; comparison with LangGraph and CrewAI in banking scenarios | Opens a path toward more advanced deep agent architectures while preserving the main system design |
 
-## Próxima etapa
+## Framework adoption path across sprints
 
-## Próxima etapa
+To make the evolution explicit, the LangChain ecosystem enters Koi in this sequence:
 
-La siguiente etapa natural de Koi ya no es “más backend por sí mismo”, sino la convergencia de cuatro capas:
+- **LangChain core** becomes visible from the moment composable prompt and model logic is formalized.
+- **LLM-ready semantic contracts** are introduced in Sprint 5.
+- **Real LLM calls with structured output** arrive in Sprint 8.
+- **LangServe** becomes part of the deployable stack in Sprint 10.
+- **Memory and retrieval architecture** expand in Sprints 11 and 12.
+- **LangGraph** becomes explicit in Sprint 13.
+- **Runnable-based composition** is made explicit as an architectural layer in Sprint 17.
+- **Governed structured tools** arrive in Sprint 18.
+- **Specialist agents** arrive in Sprint 19.
+- **CrewAI** and **Deep Agents** are explored only in later experimental stages.
 
-- **UI bancaria profesional** tipo Blue, con experiencia de producto real.[cite:1601]
-- **Orquestación LLM** con planner, routing semántico y clarification consistente.[cite:112]
-- **Capa de tools gobernada**, observable y segura.
-- **Arquitectura multiagente** con especialización por dominio bancario y control de handoffs.[web:1734][web:1737]
+## Technology direction
 
-## Principios del nuevo roadmap
+### Backend
 
-- **Streamlit** se mantiene como entorno temporal de depuración y validación rápida, no como frontend final.[cite:12]
-- **Next.js + Tailwind + shadcn/ui** pasa a ser la dirección del frontend premium por calidad visual y separación de capas.[cite:1601]
-- **LLM + tools + orchestration** sustituyen progresivamente lógica hardcoded y routing excesivamente determinista.[cite:112]
-- **Observabilidad, evaluaciones y gobernanza** dejan de ser extras y pasan a ser parte central del diseño del sistema.[web:1731][web:1737]
+- FastAPI
+- SQLModel / SQLite in early stages
+- DynamoDB for scalable conversation and memory persistence
+- S3 for document and artifact storage
+- OpenSearch for vector retrieval
+- PostgreSQL for technical workflow persistence and checkpointing
 
----
+### AI and orchestration
 
-## Lectura por etapas
+- LangChain core
+- Runnable-based LLM execution
+- Structured outputs
+- Typed and governed tools
+- LangServe
+- LangSmith
+- LangGraph
+- Specialist agents
+- CrewAI experimentation
+- Deep Agents experimentation
 
-- **v0.x**: construcción del producto funcional, desde API bancaria autenticada hasta routing agentic inicial y primera UI usable.[cite:300]  
-- **v1.x**: maduración como sistema agentic serio, con memoria, RAG, observabilidad, guardrails, human-in-the-loop y gobernanza.[cite:300]  
-- **v2.0**: consolidación como showcase enterprise orientado a portfolio senior, con arquitectura y demo de producto completas.[cite:300]
+### Frontend
 
----
+- Streamlit as temporary POC UI
+- Next.js as target professional frontend
+- Tailwind CSS
+- shadcn/ui
 
-## Capacidades arquitectónicas cubiertas
+## Status philosophy
 
-- Seguridad básica y auth seria con Bearer + JWT (ya implementado a nivel de generación y validación de tokens para usuarios demo).[cite:698]
-- Persistencia real y separación entre API, datos, memoria y experiencia de usuario (introducida progresivamente a partir de Sprint 4 con SQLite + SQLModel para datos bancarios y chat). [web:866][cite:300]
-- Routing híbrido y posterior evolución a orquestación agentic con tools.[cite:300]
-- Observabilidad, evaluación y guardrails como base de fiabilidad operativa.[cite:300]
-- Human-in-the-loop, auditabilidad y gobierno del sistema para contexto fintech.[cite:300]
-- Estrategia multi-modelo y preparación para integraciones externas y ecosistemas más amplios.[cite:300]
+Koi is intentionally built in stages.
+
+The early stages prioritize correctness, persistence, and banking API foundations. The middle stages introduce conversational continuity, real LLM calls, observability, retrieval, and orchestration. The later stages introduce specialist-agent systems and more advanced experiments such as CrewAI and Deep Agents.
+
+This roadmap keeps the project coherent while making the progression toward a more capable agentic fintech copilot explicit.
